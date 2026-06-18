@@ -25,13 +25,13 @@ io.on('connection', (socket) => {
         try {
             const { hostName, settings } = payload;
             
-            // 1. Sirf Session banaya
+            // 1. Session created only
             const session = sessionEngine.initializeSession(socket.id, settings, io);
             
             console.log(`Session created: ${session.sessionId} by ${hostName}`);
             
-            // Hum yahan participant ko join NAHI karwa rahe. 
-            // Wo next page par jaakar baaki players ki tarah join karega.
+            // We do not join the participant here.
+            // They will join from the next page like other players.
             
             callback({ success: true, roomId: session.sessionId });
         } catch (error) {
@@ -49,10 +49,10 @@ io.on('connection', (socket) => {
             const participant = session.joinSession(socket.id, playerName);
             socket.join(roomId);
             
-            // 🔥 THE MAGIC FIX: Blast the updated list to EVERYONE in the room
+            // Send the updated list to everyone in the room
             io.to(roomId).emit('update_players', session.getParticipantRoster());
 
-            // System message for others in the chat
+            // System message for other players
             socket.to(roomId).emit('chat_message', {
                 playerName: 'System',
                 text: `${playerName} joined the game!`,
@@ -90,14 +90,14 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Drawing Syncing (High frequency)
+    // Drawing sync
     socket.on('draw_data', (payload) => {
         const { roomId, stroke } = payload;
         const session = sessionEngine.fetchSession(roomId);
         
         if (session && session.matchState.activeDrawerId === socket.id) {
             session.saveCanvasStroke(stroke);
-            // Broadcast to everyone ELSE in the room
+            // Broadcast to everyone else in the room
             socket.to(roomId).emit('draw_data', stroke);
         }
     });
@@ -116,14 +116,14 @@ io.on('connection', (socket) => {
         const { roomId, canvasState } = payload;
         const session = sessionEngine.fetchSession(roomId);
         
-        // Sirf active drawer hi undo kar sakta hai
+        // Only the active drawer can undo
         if (session && session.matchState.activeDrawerId === socket.id) {
             socket.to(roomId).emit('undo_canvas', canvasState);
         }
     });
 
 
-// Drawer selects a word
+    // Drawer selects a word
     socket.on('choose_word', (payload) => {
         const { roomId, word } = payload;
         const session = sessionEngine.fetchSession(roomId);
@@ -134,7 +134,7 @@ io.on('connection', (socket) => {
     });
 
 
-    // Chat and Guessing Logic
+    // Chat and guessing logic
     socket.on('guess', (payload) => {
         const { roomId, text } = payload;
         const session = sessionEngine.fetchSession(roomId);
@@ -142,7 +142,7 @@ io.on('connection', (socket) => {
         if (session) {
             const isCorrect = session.processGuess(socket.id, text);
             
-            // If the guess was wrong, broadcast it as a normal chat message
+            // If the guess is wrong, send it as a normal chat message
             if (!isCorrect) {
                 const participant = session.activeParticipants.get(socket.id);
                 io.to(roomId).emit('chat_message', {

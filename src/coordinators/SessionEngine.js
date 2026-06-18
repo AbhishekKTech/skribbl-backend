@@ -6,7 +6,6 @@ class SessionEngine {
         this.activeSessions = new Map();
     }
 
-    // Update this function:
     initializeSession(adminId, config, io) { // <-- Add 'io' here
         const sessionId = nanoid(6); 
         const newSession = new GameSession(sessionId, adminId, config, io); // <-- Pass 'io' here

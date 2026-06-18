@@ -26,7 +26,7 @@ class GameSession {
         };
         
         this.timerInterval = null;
-        this.drawnPlayers = []; // Naya array: Track karega ki is round mein kis-kis ne draw kar liya
+        this.drawnPlayers = []; // New array: tracks which players have drawn in the current round
     }
 
     joinSession(socketId, displayName) {
@@ -46,7 +46,7 @@ class GameSession {
         this.startNextTurn();
     }
 
-    // Helper: 3 random unique words nikalne ke liye
+    // Helper: get 3 random unique words
     getRandomWords(count) {
         const shuffled = [...WORD_LIST].sort(() => 0.5 - Math.random());
         return shuffled.slice(0, count);
@@ -55,13 +55,13 @@ class GameSession {
     startNextTurn() {
         clearInterval(this.timerInterval);
 
-        // Check 1: Kya sabne draw kar liya is round mein?
+        // Check 1: Have all players drawn in this round?
         if (this.drawnPlayers.length >= this.activeParticipants.size) {
-            this.matchState.roundNumber++; // Naya round start karo
-            this.drawnPlayers = []; // Naye round ke liye list khali
+            this.matchState.roundNumber++; // start a new round
+            this.drawnPlayers = []; // clear list for the new round
         }
 
-        // Check 2: Kya saare rounds khatam ho gaye? (GAME OVER CHECK)
+        // Check 2: Have all rounds finished? (GAME OVER CHECK)
         if (this.matchState.roundNumber > this.sessionConfig.totalRounds) {
             return this.endGame();
         }
@@ -84,7 +84,7 @@ class GameSession {
         this.matchState.currentPhase = 'WordSelection';
         this.matchState.targetWord = ''; 
         this.matchState.canvasLogs = []; 
-        this.matchState.timer = 15; // Drawer ko 15 seconds milenge word choose karne ke liye
+        this.matchState.timer = 15; // Drawer gets 15 seconds to choose a word
 
         const wordChoices = this.getRandomWords(3);
 
@@ -105,13 +105,13 @@ class GameSession {
             this.io.to(this.sessionId).emit('timer_tick', { timeLeft: this.matchState.timer });
 
             if (this.matchState.timer <= 0) {
-                // Agar drawer ne time par select nahi kiya, toh pehla word automatically pick kar lo
+                // If drawer didn't choose in time, auto-pick the first word
                 this.selectWord(this.matchState.activeDrawerId, wordChoices[0]);
             }
         }, 1000);
     }
 
-    // Naya function: Jab drawer UI se ek word click karega
+    // New function: called when the drawer selects a word from the UI
     selectWord(socketId, word) {
         if (socketId !== this.matchState.activeDrawerId || this.matchState.currentPhase !== 'WordSelection') return;
 
