@@ -123,7 +123,15 @@ io.on('connection', (socket) => {
     });
 
 
-    
+// Drawer selects a word
+    socket.on('choose_word', (payload) => {
+        const { roomId, word } = payload;
+        const session = sessionEngine.fetchSession(roomId);
+        
+        if (session) {
+            session.selectWord(socket.id, word);
+        }
+    });
 
 
     // Chat and Guessing Logic
