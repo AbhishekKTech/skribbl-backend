@@ -159,6 +159,11 @@ io.on('connection', (socket) => {
     });
 });
 
+
+app.get('/', (req, res) => {
+    res.send('Skribbl Backend is Awake!');
+});
+
 const PORT = process.env.PORT || 4000;
 server.listen(PORT, () => {
     console.log(`🚀 Websocket Engine running on port ${PORT}`);
